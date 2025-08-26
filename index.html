@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Birthday Chibi Walk</title>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+
+  <!-- css part -->
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .scene {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: url('Untitled design (1).png') no-repeat center;
+      background-size: cover;
+    }
+
+    .chibi {
+      position: absolute;
+      bottom: -20px;
+      right: -400px;
+      width: 400px;
+      height: 400px;
+      background-size: cover;
+      image-rendering: pixelated;
+    }
+
+    .start-button {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      cursor: pointer;
+      z-index: 10;
+      transition: opacity 0.4s ease;
+    }
+
+    .start-button:hover {
+      animation: bounce 0.4s ease-in-out;
+    }
+
+    @keyframes bounce {
+      0% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -52%) scale(1.08); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+
+    #speechBubble {
+      position: absolute;
+      bottom: 250px;
+      right: 100px;
+      font-family: 'VT323', monospace;
+      font-size: 26px;
+      color: #000000;
+      text-shadow: 1px 1px 0 #ffd9f7;
+      image-rendering: pixelated;
+      line-height: 1.5;
+      letter-spacing: 0.5px;
+      max-width: 500px;
+      text-align: left;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 10;
+    }
+
+    #clickHint {
+      font-size: 14px;
+      margin-top: 8px;
+      color: #a288a6;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #typedText {
+      letter-spacing: 1px;
+      word-spacing: 4px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .ready-button {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      cursor: pointer;
+      z-index: 15;
+      opacity: 0;
+      display: none;
+      transition: opacity 0.4s ease;
+    }
+
+    #giftBox {
+      position: absolute;
+      top: -300px;             /* start off screen */
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;           /* hidden until drop */
+      z-index: 20;
+    }
+
+  .gift-container {
+  position: absolute;
+  top: 0;               /* anchor box at top inside giftBox */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;         /* keep your new size */
+  height: auto;
+  z-index: 2;
+}
+
+.gift-lid {
+  position: absolute;
+  top: -85px;           /* just above the box; tweak to fit exactly */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 500px;         /* match box width for alignment */
+  height: auto;
+  z-index: 3;
+  transform-origin: bottom center;
+}
+
+
+
+
+#letter {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px); /* initially hidden inside box */
+  width: 250px; /* adjust based on your image */
+  height: auto;
+  opacity: 0;
+  z-index: 3; /* above the box */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.letter-img {
+  width: 150%;
+  height: auto;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+#letterText {
+  position: absolute;
+  top: 50%; 
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%; /* keep text inside the letter nicely */
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  color: #5a4634;
+  text-align: center;
+  white-space: pre-wrap;
+  line-height: 1.4;
+  z-index: 2;
+  pointer-events: none;
+}
+
+
+  </style>
+</head>
+
+<!-- html part -->
+
+<body>
+
+  <div class="scene">
+    <div class="chibi" id="chibi"></div>
+    <img src="pixil-frame-0 (9).png" class="start-button" id="startBtn" />
+
+    <div class="speech-bubble" id="speechBubble">
+      <div id="typedText"></div>
+      <div id="clickHint">(click to continue)</div>
+    </div>
+
+    <img src="ready.png" id="readyBtn" class="ready-button" />
+    
+    <div id="giftBox">
+  <img src="gift_container.png" class="gift-container" />
+  <img src="gift_lid.png" class="gift-lid" />
+  <div id="letter">
+    <img src="letter.png" class="letter-img" />
+    <div id="letterText"></div>
+  </div>
+</div>
+
+
+  </div>
+
+<!-- JS PART -->
+
+  <script>
+
+    const messages = [
+      "Hiiiii bibiiiiiiiiii >.<",
+      "I created a little smthn for you cutu cutuuu",
+      "I hope you like it hehe. you ready?"
+    ];
+
+    let currentLine = 0;
+    const chibi = document.getElementById("chibi");
+    const speechBubble = document.getElementById("speechBubble");
+    const readyBtn = document.getElementById("readyBtn");
+    const clickHint = document.getElementById("clickHint");
+    const typedText = document.getElementById("typedText");
+
+    function typeLine(line, callback) {
+      typedText.innerText = "";
+      clickHint.style.opacity = 0;
+
+      let i = 0;
+      const typeInterval = setInterval(() => {
+        typedText.innerText += line.charAt(i);
+        i++;
+        if (i >= line.length) {
+          clearInterval(typeInterval);
+          clickHint.style.opacity = 1;
+          if (callback) callback();
+        }
+      }, 50);
+    }
+
+    function handleClick() {
+      if (currentLine < messages.length - 1) {
+    currentLine++;
+    clickHint.style.opacity = 0;
+    typeLine(messages[currentLine]);
+  } else {
+        speechBubble.removeEventListener("click", handleClick);
+        clickHint.style.opacity = 0;
+
+    // 👇 pehle speechBubble fade out hoga
+        speechBubble.style.opacity = 0;
+
+        setTimeout(() => {
+      // phir hide kar dete so clean lagge
+          speechBubble.style.display = "none";
+
+      // 👇 ab ready button show hoga
+          readyBtn.style.display = "block";
+          setTimeout(() => {
+            readyBtn.style.opacity = 1; // fade in
+          }, 50);
+        }, 600); // fadeout ka time
+      }
+    }
+
+
+
+    function startChibiWalk() {
+      const frames = [
+        'pixil-layer-0-removebg-preview.png',
+        'pixil-layer-1-removebg-preview.png',
+        'pixil-layer-2-removebg-preview.png'
+      ];
+
+      let frameIndex = 0;
+      let chibiRight = -400;
+
+      const frameInterval = setInterval(() => {
+        chibi.style.backgroundImage = `url('${frames[frameIndex % frames.length]}')`;
+        frameIndex++;
+      }, 100);
+
+      const walkInterval = setInterval(() => {
+        chibiRight += 10;
+        chibi.style.right = chibiRight + 'px';
+
+        if (chibiRight >= window.innerWidth * 0.18) {
+          clearInterval(frameInterval);
+          clearInterval(walkInterval);
+          chibi.style.backgroundImage = `url('pixil-layer-0.png')`;
+
+          speechBubble.style.opacity = 1;
+          typeLine(messages[currentLine]);
+          speechBubble.addEventListener("click", handleClick);
+        }
+      }, 60);
+    }
+
+    document.getElementById("startBtn").addEventListener("click", () => {
+      const btn = document.getElementById("startBtn");
+      btn.style.opacity = 0;
+      setTimeout(() => {
+        btn.style.display = "none";
+        startChibiWalk();
+      }, 400);
+    });
+
+    readyBtn.addEventListener("click", () => {
+      readyBtn.style.opacity = 0;
+      setTimeout(() => {
+        readyBtn.style.display = "none";
+        triggerGiftDrop(); // define later
+      }, 400);
+    });
+
+    function triggerGiftDrop() {
+  const giftBox = document.getElementById("giftBox");
+  giftBox.style.display = "block";
+
+  const dropAnim = giftBox.animate([
+    { top: "-300px" },       
+    { top: "65%", offset: 0.8 },
+    { top: "50%" },  
+    { top: "60%" },  
+    { top: "55%" },  
+    { top: "60%" },  
+    { top: "58%" },  
+    { top: "62%" }   
+  ], {
+    duration: 2000,
+    easing: "ease-out",
+    fill: "forwards"
+  });
+
+  dropAnim.onfinish = () => {
+    // enable click to open the lid only after bounce ends
+    giftBox.addEventListener("click", openGift, { once: true });
+  };
+}
+
+
+
+function openGift() {
+  const lid = document.querySelector(".gift-lid");
+  const letter = document.getElementById("letter");
+  const letterText = document.getElementById("letterText");
+
+  // Animate lid flying away
+  lid.animate([
+    { transform: "translateX(-50%) translateY(0) rotate(0deg)", opacity: 1 },
+    { transform: "translateX(-50%) translateY(-200px) rotate(-25deg)", opacity: 0 }
+  ], {
+    duration: 1000,
+    easing: "ease-out",
+    fill: "forwards"
+  }).onfinish = () => {
+    // After lid gone, show letter image
+    letter.animate([
+      { transform: "translateX(-50%) translateY(100px)", opacity: 0 },
+      { transform: "translateX(-50%) translateY(-50px)", opacity: 1 }
+    ], {
+      duration: 1000,
+      easing: "ease-out",
+      fill: "forwards"
+    }).onfinish = () => {
+      startLetterMessages();
+    };
+  };
+
+  // Messages for the letter
+  const letterMessages = [
+    "Happy Happy Birthday my cutuuuuuu, my smol baby, my sugarpie and the love of my lifee💌",
+    "we met sooo randomly on the most random app ever and honestly its been so much fun since then 💖",
+    "you're my best friend to who i can share everything, let it be any topic and it never felt very difficuly either",
+    "there might be a lot of differences between us and the time right now may not be the best",
+    "but lets try to work everything out together and solve everything there is",
+    "most importantly, lets learn to respect our likeing and dislikings and adjust together💕",
+    "i really dont wanna lose you and i believe a little more efforts would be enough for us to be togher without sm fights 🌸",
+    "I love you soo soo sooooo much, stay mine always! ❤️",
+    "Have a blast today my love, i hope every coming birthday become the best there is❤️",
+    "I love youuuuuuuu babyyyyyyy mwahhhh",
+    "mwah mwah mwah mwah mwah mwah mwahhhhhhhh"
+  ];
+
+  let currentMsg = 0;
+
+  function typeLetterMessage(msg, callback) {
+    letterText.innerText = "";
+    let i = 0;
+    const interval = setInterval(() => {
+      letterText.innerText += msg.charAt(i);
+      i++;
+      if (i >= msg.length) {
+        clearInterval(interval);
+        if (callback) callback();
+      }
+    }, 50); // typing speed
+  }
+
+  function startLetterMessages() {
+    typeLetterMessage(letterMessages[currentMsg], () => {
+      // After typing finishes, wait for click to continue to next message
+      letter.addEventListener("click", nextLetterMessage, { once: true });
+    });
+  }
+
+  function nextLetterMessage() {
+    currentMsg++;
+    if (currentMsg < letterMessages.length) {
+      typeLetterMessage(letterMessages[currentMsg], () => {
+        letter.addEventListener("click", nextLetterMessage, { once: true });
+      });
+    } else {
+      // All messages done; you can trigger any next action here
+      console.log("All messages shown!");
+    }
+  }
+}
+
+
+  </script>
+</body>
+</html>
